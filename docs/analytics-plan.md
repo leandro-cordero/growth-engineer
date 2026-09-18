@@ -56,9 +56,9 @@ landing_page_viewed → cta_clicked → signup_viewed → signup_started → sig
 
 | Event | Side | Trigger | Properties | Answers |
 |---|---|---|---|---|
-| `landing_page_viewed` | client | landing module script, once per load | `is_returning` | Funnel entry; experiment exposure for `hero_offer_v1`; sample-ratio check |
+| `landing_page_viewed` | client | landing module script, once per load | `is_returning` | Funnel entry; experiment exposure for `funnel_proof_v1`; sample-ratio check |
 | `cta_clicked` | client | one delegated listener on `[data-cta-id]` | `cta_id`, `cta_label`, `cta_position` (`hero`/`sticky`/`final`…) | Which CTA position drives signups |
-| `signup_viewed` | client | `SignupForm` mount | `entry_point` (from `?entry=`), `form_variant` | Landing → signup handoff; exposure for `signup_proof_v1` |
+| `signup_viewed` | client | `SignupForm` mount | `entry_point` (from `?entry=`) | Landing → signup handoff; exposure for visitors who land directly on `/signup` |
 | `signup_started` | client | first field focus, or the Google button | `method` (`email`/`google`), `field_first_touched` | Friction before the first keystroke |
 | `signup_field_errored` | client | client validation or a server field error | `field`, `error_code`, `error_source` (`client`/`server`), `attempt_n` | Where validation friction is |
 | `signup_submitted` | client | after the request is sent | `method`, `time_to_submit_ms`, `attempt_n` | Form completion; client side of reconciliation |
@@ -79,8 +79,9 @@ Registered once in `client.ts`, never repeated in an event:
 
 ### Identity
 
-1. `IdentityBoot.astro` sets `fxr_aid` (first-party cookie, 1 year, `SameSite=Lax`); PostHog
-   bootstraps with the same id, so pre-signup events share one distinct id.
+1. The inline head script (`src/lib/experiments/head-script.js`) sets `fxr_aid` (first-party
+   cookie, 1 year, `SameSite=Lax`); PostHog bootstraps with the same id, so pre-signup events
+   share one distinct id.
 2. First touch goes in `fxr_ft` (90 days, write-once), last touch in `sessionStorage`.
 3. `POST /api/users` carries `anonymous_id`. The server aliases the anonymous id into the new
    `user_id` **after** capturing `account_created`, so the whole pre-signup path joins the user.
@@ -101,24 +102,30 @@ Known trade-off: Safari ITP caps JS-set cookies at 7 days, weakening first-touch
 | Low-quality emails | `email_domain_type` classification; report conversion with and without `disposable` | Disposable share on the dashboard |
 | Schema drift | Typed map + `satisfies`; test that no event property shadows a super property; dev-only runtime check for snake_case, flat values, no `undefined`; test that the PostHog SDKs are imported only in their wrappers | Build/test failure |
 
-## 5. Two experiments at once
+## 5. Experiment properties
 
-`hero_offer_v1` and `signup_proof_v1` run together, so a single `experiment_key` /
-`experiment_variant` pair isn't enough. Every client event carries one flat `$feature/<key>`
-super property per registered experiment (`null` when not enrolled), the name PostHog's
-experiment analysis reads. The `POST /api/users` body sends the same values as `experiments`
-(a flat key → variant map, `src/lib/users/schema.ts`), and the server copies them onto
-`account_created`.
+One experiment runs: `funnel_proof_v1` (`control` / `counter`), a signup counter under the
+landing hero CTA and the `/signup` submit button. Every client event carries one flat
+`$feature/<key>` super property per registered experiment (`null` when not enrolled), the name
+PostHog's experiment analysis reads. The `POST /api/users` body sends the same values as
+`experiments` (a flat key → variant map, `src/lib/users/schema.ts`), which the server cleans
+against the registry and copies onto `account_created`. The shape takes more than one
+experiment without a schema change.
 
 ## 6. Experiment instrumentation
 
-- **Assignment:** deterministic FNV-1a hash of `fxr_aid` + experiment key
+- **Assignment:** deterministic FNV-1a hash (with a finaliser) of `fxr_aid` + experiment key
   (`lib/experiments/bucket.ts`), computed pre-paint by the inline head script, so no flicker and
-  no flag request. Each experiment has its own key, so assignments are independent.
-- **Exposure:** the first event of the surface the experiment changes — `landing_page_viewed`
-  for `hero_offer_v1`, `signup_viewed` for `signup_proof_v1` — with `$feature/<key>` set.
+  no flag request. A visitor gets the same variant on the landing page, on `/signup` and on
+  return visits.
+- **Exposure:** `landing_page_viewed` with `$feature/funnel_proof_v1` set. Visitors who arrive
+  straight on `/signup` are exposed at `signup_viewed` and reported outside the primary
+  population.
 - **Conversion:** `account_created` carries the same `$feature/<key>` values, sent in the
   `POST /api/users` body.
+- **The counter is simulated** for this challenge (a fixed base plus client-side ticks), so it
+  sends no events and reads no data. Production replaces it with a real `GET /api/users/count`
+  (see `experiment-proposal.md` › The counter is intentionally simulated).
 - **Sample-ratio check:** exposures per variant against 50/50; a deviation at p < 0.001 makes a
   result inconclusive.
 - Full design and decision rules: `docs/experiment-proposal.md`.
@@ -136,12 +143,13 @@ experiment analysis reads. The `POST /api/users` body sends the same values as `
 
 ## 8. Not built, and next
 
-- **Consent management (out of scope).** Events are sent without a consent step. In production,
-  EU/UK traffic needs a consent banner before non-essential cookies. Plan: PostHog's
-  `cookieless_mode: 'on_reject'` so declined visitors are still counted, and `analytics_consent`
-  on `account_created` so the server-side conversion and the client-side denominator describe
-  the same population (a visitor who ignores the banner sends no client events, but still
-  converts on the server). Without that, the headline metric reads high.
+- **Consent management (out of scope).** Events are sent without a consent step, so there is
+  no consent property anywhere. In production, EU/UK traffic needs a consent banner before
+  non-essential cookies; that is a next iteration and would also need the server-side
+  conversion and the client-side denominator to describe the same population.
+- **A real signup count.** The proof counter is fake for the challenge. Production needs a
+  public, edge-cached `GET /api/users/count` read from the store; without it the variant must not
+  ship.
 - `scroll_depth` / section-in-view events: a bounce and a full read that ends in a close are
   the same row today.
 - Web-vitals events (`lcp`, `inp`, `cls`) from real users.

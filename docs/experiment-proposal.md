@@ -1,98 +1,121 @@
-# Experiment proposal — `signup_proof_v1`
+# Experiment proposal — `funnel_proof_v1`
 
-**Surface:** `/signup` · **Lever:** proof at the submit button · **Status:** proposed, not running.
-Evidence and the shortlist it won against: `docs/research/exp-signup-proof-v1.md`.
-Measurement plumbing: `docs/analytics-plan.md` §6.
+**Surface:** `/` (hero) and `/signup` (submit) · **Lever:** a live-style signup counter as social
+proof · **Status:** proposed, not running.
+Measurement plumbing: `docs/analytics-plan.md` §5–6. Evidence: growth-research §C.3–C.4.
 
 ---
 
 ## Hypothesis
 
-We believe that adding **one line of substantiated proof directly under the submit button on
-`/signup`**, for visitors who reach the signup form, will increase the share of them who create
-an account.
+We believe that showing **a running count of traders who created a free account**, under the
+hero CTA on the landing page and under the submit button on `/signup`, will increase the share
+of landing visitors who create an account.
 
-**Why:** the submit button is where doubt peaks for this audience ("is this legit? will it spam
-me?"), and at that moment the landing page's reassurance is no longer on screen. A proof of
-scale is the most credible claim we can make to sceptical retail traders without an outcome
-claim (growth-research §C.3–C.4). It acts at the moment of commitment, which the landing
-experiment (`hero_offer_v1`) doesn't touch.
+**Why:** this audience's main objection is credibility ("is this legit, will it spam me?"),
+not effort. A number of people who already signed up answers it without an outcome claim
+(growth-research §C.3 #2–3). Showing it on both pages keeps the reassurance in view at the two
+moments of commitment: the first click and the submit.
 
 ## Control
 
-The shipped `/signup` form: email field, "Continue with Google (demo)", the submit button, and
-the offer line assigned by `hero_offer_v1` under it. No proof on the page.
+Everyone sees the same offer, worded identically at every CTA: **"Free plan · No credit card"**.
 
-## Variant
+- **Landing:** hero headline, "Create free account" button, offer line. No proof.
+- **`/signup`:** email field, "Continue with Google (demo)", "Create free account" button,
+  offer line. No proof.
 
-The same form with one added line directly under the submit button:
+## Variant (`counter`)
 
-> **Join 1M+ traders on FX Replay.**
+Control plus one line below the offer line, in both places:
 
-- Source in a code comment: fxreplay.com home, "1M+ traders", observed 2026-09-18. If the figure
-  can't be re-confirmed at build time, it becomes `// TODO(copy): substantiate` and the test
-  doesn't start.
-- Nothing else changes: same fields, offer line, button label and layout.
-- Both lines are prerendered; the inline head script picks the variant before paint, so there
-  is no flicker and no layout shift.
-- Passed the `copy-compliance` gate: no outcome claim, published figure, no urgency.
+> **12,480 traders have created a free account**
+
+- The number starts from a fixed base and goes up by one at random intervals (8–20s) while the
+  page is open. It is a running total, never "today" or "in the last hour" (CLAUDE.md §5,
+  no urgency theatre).
+- It sits below the offer line, so the offer doesn't move. Both lines are prerendered and the
+  inline head script picks the variant before paint, so there is no flicker and no layout shift
+  (the line reserves its width with tabular figures).
+- It is text in an `aria-live="off"` element, so screen readers don't announce every tick.
+  Under `prefers-reduced-motion` the number still updates, without animation.
+
+### The counter is intentionally simulated
+
+**For this challenge the count is fake**: a hard-coded base plus client-side increments. This
+is a deliberate scope decision, recorded here so it is not mistaken for real data.
+
+- It breaks the rule in CLAUDE.md §5 / `copy-compliance` C4 ("proof numbers are published
+  figures or a live Users API count"). A fake live counter shown to real visitors is deceptive
+  social proof (FTC risk, growth-research §C.4), so **this version must not ship to production.**
+- The code carries `// TODO(copy): substantiate — simulated for the challenge`, and the page's
+  demo notice already says the flow is simulated.
+- **Production version:** a public read endpoint, `GET /api/users/count` (cached for ~60s at
+  the edge), returns the real total. The island shows it on load and polls it, with no
+  client-side increments. The experiment design below doesn't change.
 
 ## Success metric
 
-**Primary:** unique visitors with `account_created` ÷ unique visitors with `signup_viewed`, by
-`$feature/signup_proof_v1`. Production only, suspected bots excluded.
+**Primary:** unique visitors with `account_created` ÷ unique visitors with
+`landing_page_viewed`, by `$feature/funnel_proof_v1`. This is the headline conversion metric
+(`analytics-plan.md` §2): 7-day window, production only, suspected bots excluded.
 
-Powered on the signup step, not the headline landing → account metric: the variant can only
-affect people who reach the form, and diluting by the landing → signup rate would need ~6× the
-sample. The headline metric is reported alongside, expected to move the same way and not
-expected to reach significance.
+It is powered on the full funnel, not on one step, because the variant acts on two pages.
 
-**Mechanism check:** the lift should appear at `signup_started → signup_submitted`. A lift that
-shows up only at `signup_viewed → signup_started` is not attributable to the line.
+**Mechanism checks** (read with the primary, not decisions on their own):
+- Landing: `landing_page_viewed → cta_clicked` should rise.
+- Signup: `signup_started → signup_submitted` should rise.
+- A lift that shows at neither step is not attributable to the counter.
+
+Visitors who arrive straight on `/signup` (no `landing_page_viewed`) are assigned too, but are
+outside the primary population. Report them separately.
 
 **Guardrails** (any one tripping stops the test):
 
 | Guardrail | Trips when |
 |---|---|
+| `landing_page_viewed → cta_clicked` | Variant lower than control: the counter reads as hype |
 | `signup_failed` rate | Higher in the variant |
 | `is_suspected_bot` share of `account_created` | Materially higher in the variant |
 | Profile completion: `profile_updated` ÷ (`profile_updated` + `profile_skipped`) | Variant > 10 pp below control (proof bought low-intent signups) |
-| Sample ratio of `signup_viewed` by variant | Off 50/50 at p < 0.001 |
+| Sample ratio of `landing_page_viewed` by variant | Off 50/50 at p < 0.001 |
 
 ## Design
 
-- **Assignment:** deterministic hash of `fxr_aid` with its own key, so it's independent of
-  `hero_offer_v1`. Exposure = `signup_viewed`.
-- **Size** (assumptions, not measurements: ~150 signup views/day, 60% baseline;
-  `n ≈ 16·p(1−p)/Δ²`): **minimum detectable effect 6 pp absolute (+10% relative),
-  ~1,070 per arm**. At 150/day that's **3 whole weeks** — whole weeks so weekday/weekend and
-  paid-flight cycles land in both arms.
+- **Assignment:** deterministic hash of `fxr_aid` + `funnel_proof_v1`, computed by the inline
+  head script before paint. One visitor sees the same variant on both pages and on return
+  visits. Exposure = `landing_page_viewed`.
+- **Size** (assumptions, not measurements: ~1,000 landing visitors/day, 10% baseline
+  landing → account; `n ≈ 16·p(1−p)/Δ²`): **minimum detectable effect +20% relative (2 pp
+  absolute), ~3,600 per arm**. At 1,000/day that's ~7 days, run as **2 whole weeks** so
+  weekday/weekend and campaign cycles land in both arms.
+- A true +10% effect needs ~14,400 per arm (~4–5 weeks) and will read as inconclusive at the
+  horizon. That is the most likely failure mode, accepted knowingly.
 - **Fixed horizon, no peeking for a winner.** Guardrails are checked daily from day 3; the
   primary is read once, at the horizon.
-- **Prerequisite:** the two-experiment schema (`analytics-plan.md` §5) ships first.
 
 ## Decision
 
-Read once at the pre-registered horizon (≥ 1,070 exposures per arm **and** ≥ 3 whole weeks).
+Read once at the pre-registered horizon (≥ 3,600 landing visitors per arm **and** ≥ 2 whole
+weeks).
 
 | Outcome | Condition | Action |
 |---|---|---|
-| **Ship the variant** | Primary lift significant at 95% (two-sided), point estimate ≥ +3 pp, no guardrail tripped, and the lift shows at `signup_started → signup_submitted` | Roll out to 100%; keep the line's source comment; record the result |
-| **Continue** | Not significant, point estimate ≥ +3 pp, guardrails clean | Extend **once** to 6 weeks (powers ~4 pp). No further extensions |
-| **Reject the variant** | A guardrail trips; or the variant is significantly worse; or the point estimate is < +3 pp at the horizon or after the one extension | Keep the control. An unproven line at the decision point is clutter; record the null result |
-| **Inconclusive — don't decide** | Sample-ratio failure; horizon not reached; the lift appears only before the form is touched | Fix the cause and restart the clock |
+| **Ship the variant** | Primary lift significant at 95% (two-sided), point estimate ≥ +1 pp, no guardrail tripped, and at least one mechanism check moves the same way | Roll out with the **real** count (`GET /api/users/count`), never the simulated one; record the result |
+| **Continue** | Not significant, point estimate ≥ +1 pp, guardrails clean | Extend **once** to 5 whole weeks (powers ~+9% relative). No further extensions |
+| **Reject the variant** | A guardrail trips; or the variant is significantly worse; or the point estimate is < +1 pp at the horizon or after the one extension | Keep the control; record the null result |
+| **Inconclusive — don't decide** | Sample-ratio failure; horizon not reached; the lift shows at neither mechanism step | Fix the cause and restart the clock |
 
 ## What if the traffic is lower
 
-Below ~100 signup views/day the fixed test takes over a month. Then: a sequential test with a
-pre-registered stopping rule, or qualitative methods (five moderated sessions on `/signup`, an
-exit micro-survey) instead of an underpowered A/B (growth-research §E.0).
+Below ~500 landing visitors/day the fixed test takes over a month. Then: a sequential test with
+a pre-registered stopping rule, or qualitative methods (five moderated sessions on the two pages,
+an exit micro-survey on `/signup`) instead of an underpowered A/B (growth-research §E.0).
 
-## Alongside: `hero_offer_v1`
+## Not tested
 
-The landing-page offer test (`control` vs `trial` offer wording in the hero,
-`docs/decisions.md` › Offer experiment without flicker) runs at the same time on a different
-surface and step. Each experiment is bucketed independently, so each one's marginal result is
-valid. The four combined cells get about 25% of traffic each and are **not powered**: report
-them as a smell test only (for example, if proof helps only under the `trial` offer), never as a
-finding.
+- **Offer wording** (`hero_offer_v1`, free vs trial): dropped. The research expects trial wording
+  to lose for a freemium product (growth-research §C.2, §E.3), so the landing page ships one
+  offer, "Free plan · No credit card", everywhere.
+- **FX Replay's published "1M+ traders"** as the proof line: a candidate for a later test
+  against the real live count. It's a bigger number, but not a live one.
