@@ -10,13 +10,16 @@ const LAST_TOUCH_KEY = 'fxr_lt';
 // ---------------------------------------------------------------- super properties (pure)
 
 interface SuperPropsInput {
-  /** Reads an attribute off <html>: the head script wrote the experiment variants there. */
+  /** Reads an attribute off <html>: the served HTML was built with the variant on <html>. */
   attr: (name: string) => string | null;
   cookie: string;
   search: string;
   /** Last touch from sessionStorage. */
   lastTouch: string | null;
 }
+
+/** The visitor id the edge middleware set (`fxr_aid`), or null. */
+export const readAnonymousId = (cookie: string): string | null => cookie.match(/(?:^|; )fxr_aid=([^;]+)/)?.[1] ?? null;
 
 export function readSuperProps({ attr, cookie, search, lastTouch }: SuperPropsInput) {
   const params = new URLSearchParams(search);
@@ -32,9 +35,8 @@ export function readSuperProps({ attr, cookie, search, lastTouch }: SuperPropsIn
   const existing = cookie.match(new RegExp(`(?:^|; )${FIRST_TOUCH_COOKIE}=([^;]+)`))?.[1];
   const first = existing ? safeJson(decodeURIComponent(existing)) : { source: fromUrl.utm_source, campaign: fromUrl.utm_campaign };
 
-  const cookieAid = cookie.match(/(?:^|; )fxr_aid=([^;]+)/)?.[1] ?? null;
   const props: Record<string, Prim> = {
-    anonymous_id: cookieAid,
+    anonymous_id: readAnonymousId(cookie),
     app_env: attr('data-app-env') ?? 'development',
     ...last,
     first_touch_utm_source: first.source ?? null,

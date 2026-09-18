@@ -1,0 +1,36 @@
+---
+// The whole signup page, shared by both variant routes. The counter renders inside the island
+// only when variant === "counter", so control HTML has no counter DOM.
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import SiteFooter from "../landing/SiteFooter.astro";
+import SignupForm from "./SignupForm";
+
+interface Props {
+  variant: "control" | "counter";
+}
+
+const { variant } = Astro.props;
+---
+
+<BaseLayout
+  title="Create your free FX Replay account"
+  description="Create a free FX Replay account with your email. Free plan, no credit card. Demo sign-up built for a coding challenge."
+  experiments={{ funnel_proof_v1: variant }}
+  canonicalPath="/signup"
+  noindex={variant !== "control"}
+>
+  <header class="mx-auto max-w-md px-4 py-4">
+    <a href="/" class="inline-flex min-h-11 items-center font-heading text-lg font-bold">FX Replay</a>
+  </header>
+  <main id="main" tabindex="-1" class="mx-auto max-w-md px-4 py-8">
+    <h1>Create your free account</h1>
+    <p class="mt-2">Practise your setups on past markets without risking real money.</p>
+    <p class="mt-4 text-sm text-ink-muted">
+      Demo: this sign-up saves your email to a test database. No real FX Replay account is created.
+    </p>
+    <div class="mt-6">
+      <SignupForm client:load variant={variant} />
+    </div>
+  </main>
+  <SiteFooter />
+</BaseLayout>

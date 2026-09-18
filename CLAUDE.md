@@ -89,7 +89,7 @@
 
   - Mobile budget: LCP < 2.0s (4G), INP < 200ms, CLS < 0.05. Landing: **zero React**,
     ≤ 20KB gz first-party JS. `/signup`: ≤ ~120KB gz first load.
-  - The inline head script stays < 1KB, synchronous and dependency-free.
+  - The variant is chosen at the edge (`middleware.ts`), not in the browser: no inline script, no flicker.
   - posthog-js is dynamically imported on idle. Nothing third-party blocks render.
   - Images: explicit width/height, `astro:assets`. SVG for charts.
   - SEO: unique title (≤ 60 chars) + description (≤ 155), canonical, OG/Twitter,
@@ -111,13 +111,16 @@
     ai-workflow.md           Claude Code system + judgment 
   public/                    favicon, og image, robots.txt
   vercel.json                /rly/* → PostHog rewrite (ad-block-resistant ingestion)
+  middleware.ts              Vercel Routing Middleware (edge): picks the variant, rewrites to /v/counter/*
   src/
+    middleware.ts            Astro middleware, DEV only: same decideVariant() for `astro dev`
     pages/
-      index.astro            landing: prerendered, zero React
-      signup.astro           signup: prerendered, hosts the SignupForm island
+      index.astro            landing (control): prerendered, zero React
+      signup.astro           signup (control): prerendered, hosts the SignupForm island
+      v/counter/             the counter variant's copies of / and /signup (noindex, canonical to public path)
       api/users/index.ts     POST create · GET list (admin)   prerender = false
       api/users/[id].ts      PATCH update (profile)            prerender = false
-    layouts/Base.astro       <head>: SEO, JSON-LD, <Font>, HeadBoot, analytics loader
+    layouts/BaseLayout.astro <head>: SEO, <Font>, <html funnel_proof_v1> variant, analytics loader
     components/              Components per domain/feature
     lib/                     framework-free; tests sit next to the file
       analytics/
@@ -125,7 +128,8 @@
         client.ts            track(): lazy posthog-js, super properties, never throws
         server.ts            posthog-node: accountCreated(), time-boxed, never throws
       experiments/
-        bucket.ts            EXPERIMENTS registry + deterministic assign(); used by HeadBoot and the API
+        bucket.ts            EXPERIMENTS registry + deterministic assign(); used by the edge and the API
+        edge.ts              decideVariant(): pure next/rewrite/redirect + cookies; used by both middlewares
       users/
         schema.ts            zod request/response schemas (server only)
         store.ts             Store interface · memoryStore · redisStore (chosen by env)

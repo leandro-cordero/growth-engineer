@@ -1,0 +1,54 @@
+---
+// The whole landing page, shared by both variant routes. Zero React. The counter route passes
+// ProofCounter into the `proof` slot; the control route leaves it empty, so control HTML has no
+// counter markup and no counter script.
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import Faq from "./Faq.astro";
+import FinalCta from "./FinalCta.astro";
+import Hero from "./Hero.astro";
+import HowItWorks from "./HowItWorks.astro";
+import SiteFooter from "./SiteFooter.astro";
+
+interface Props {
+  variant: "control" | "counter";
+}
+
+const { variant } = Astro.props;
+---
+
+<BaseLayout
+  title="Try FX Replay Free: backtest on past markets"
+  description="Replay past markets candle by candle, place simulated trades and review your decisions. Free plan, no credit card."
+  experiments={{ funnel_proof_v1: variant }}
+  canonicalPath="/"
+  noindex={variant !== "control"}
+>
+  <header class="mx-auto max-w-3xl px-4 py-4">
+    <p class="font-heading text-lg font-bold">FX Replay</p>
+  </header>
+  <main id="main" tabindex="-1">
+    <Hero><slot name="proof" slot="proof" /></Hero>
+    <HowItWorks />
+    <Faq />
+    <FinalCta />
+  </main>
+  <SiteFooter />
+
+  <script>
+    import { track } from "../../lib/analytics/client";
+
+    track("landing_page_viewed", { is_returning: /(?:^|; )fxr_ret=1/.test(document.cookie) });
+
+    // One delegated listener for every CTA. A click that navigates before posthog-js loads can be
+    // dropped; `?entry=` on the signup page recovers the position.
+    document.addEventListener("click", (event) => {
+      const cta = (event.target as Element | null)?.closest<HTMLElement>("[data-cta-id]");
+      if (!cta) return;
+      track("cta_clicked", {
+        cta_id: cta.dataset.ctaId ?? "",
+        cta_label: cta.textContent?.trim() ?? "",
+        cta_position: cta.dataset.ctaPosition ?? "",
+      });
+    });
+  </script>
+</BaseLayout>

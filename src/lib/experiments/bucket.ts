@@ -31,6 +31,11 @@ export function assign(key: string, anonymousId: string): string {
   return exp.variants[Math.floor(bucket * exp.variants.length)]!;
 }
 
+/** The served variant of every registered experiment, read off `<html>` (`attr` = getAttribute). */
+export function readAssignments(attr: (name: string) => string | null): ExperimentMap {
+  return cleanExperiments(Object.fromEntries(EXPERIMENTS.map(({ key }) => [key, attr(key)])));
+}
+
 /** Keeps registered keys with a valid variant, nulls the rest, drops unknown keys. Never throws. */
 export function cleanExperiments(input: unknown): ExperimentMap {
   const src = typeof input === 'object' && input !== null ? (input as Record<string, unknown>) : {};

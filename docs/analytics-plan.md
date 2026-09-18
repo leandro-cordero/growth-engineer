@@ -79,15 +79,18 @@ Registered once in `client.ts`, never repeated in an event:
 
 ### Identity
 
-1. The inline head script (`src/lib/experiments/head-script.js`) sets `fxr_aid` (first-party
-   cookie, 1 year, `SameSite=Lax`); PostHog bootstraps with the same id, so pre-signup events
-   share one distinct id.
+1. The edge middleware (root `middleware.ts`) sets `fxr_aid` (first-party server cookie, 1 year,
+   `SameSite=Lax`, readable by JS) and `fxr_ret` (`1` if the id existed before the request; feeds
+   `is_returning`). PostHog bootstraps with the same id, so pre-signup events share one distinct
+   id. `astro dev` doesn't run Vercel middleware, so `src/middleware.ts` (dev only) wraps the same
+   `decideVariant()`.
 2. First touch goes in `fxr_ft` (90 days, write-once), last touch in `sessionStorage`.
 3. `POST /api/users` carries `anonymous_id`. The server aliases the anonymous id into the new
    `user_id` **after** capturing `account_created`, so the whole pre-signup path joins the user.
 4. Email is never a distinct id or an event property.
 
-Known trade-off: Safari ITP caps JS-set cookies at 7 days, weakening first-touch on Safari.
+Safari ITP's 7-day cap applies to JS-set cookies, not server-set ones, so `fxr_aid` survives. The
+first-touch cookie `fxr_ft` is still JS-set, so first-touch attribution is weaker on Safari.
 
 ## 4. Making the data trustworthy
 
@@ -115,9 +118,13 @@ experiment without a schema change.
 ## 6. Experiment instrumentation
 
 - **Assignment:** deterministic FNV-1a hash (with a finaliser) of `fxr_aid` + experiment key
-  (`lib/experiments/bucket.ts`), computed pre-paint by the inline head script, so no flicker and
-  no flag request. A visitor gets the same variant on the landing page, on `/signup` and on
-  return visits.
+  (`lib/experiments/bucket.ts`), computed at the edge by `decideVariant()`
+  (`lib/experiments/edge.ts`, called by the root `middleware.ts`), so no flicker and no flag
+  request. Counter visitors are rewritten to the prerendered `/v/counter/*` pages. A visitor gets
+  the same variant on the landing page, on `/signup` and on return visits. Direct hits on `/v/*`
+  get a 307 to the public path, so nobody can pick a variant by URL (that would skew the sample
+  ratio). `?fxr_variant=control|counter` is a QA override honoured only when `VERCEL_ENV` is not
+  `production`.
 - **Exposure:** `landing_page_viewed` with `$feature/funnel_proof_v1` set. Visitors who arrive
   straight on `/signup` are exposed at `signup_viewed` and reported outside the primary
   population.

@@ -1,0 +1,20 @@
+---
+import { CTA_LABEL } from "../../lib/cta";
+
+interface Props {
+  /** Where on the page: becomes `?entry=` and `cta_position`. */
+  position: string;
+  /** Stable id for `cta_id`. */
+  id: string;
+}
+
+const { position, id } = Astro.props;
+---
+
+<a
+  href={`/signup?entry=${position}`}
+  data-cta-id={id}
+  data-cta-position={position}
+  class="inline-flex min-h-11 items-center justify-center rounded-md bg-brand px-6 font-bold text-on-brand hover:bg-brand-hover active:bg-brand-pressed"
+  >{CTA_LABEL}</a
+>

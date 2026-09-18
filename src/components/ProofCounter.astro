@@ -1,0 +1,15 @@
+---
+// Counter variant only: imported by the counter landing route alone, so control HTML has neither
+// this markup nor its script. The figure is simulated (see lib/proof-counter.ts).
+import { formatCount, PROOF_BASE } from "../lib/proof-counter";
+---
+
+<p data-exp="funnel_proof_v1" data-variant="counter" class="mt-3 text-sm text-ink-muted">
+  <span data-proof-count>{formatCount(PROOF_BASE)}</span> traders have created a free account
+</p>
+
+<script>
+  import { startCounter } from "../lib/proof-counter";
+
+  document.querySelectorAll<HTMLElement>("[data-proof-count]").forEach((el) => startCounter(el));
+</script>

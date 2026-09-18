@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { assign, cleanExperiments, EXPERIMENTS, hash } from './bucket';
+import { assign, cleanExperiments, EXPERIMENTS, hash, readAssignments } from './bucket';
 
 const ids = Array.from({ length: 10_000 }, () => crypto.randomUUID());
 
@@ -47,6 +47,14 @@ describe('hash', () => {
       expect(n / ids.length).toBeGreaterThan(0.23);
       expect(n / ids.length).toBeLessThan(0.27);
     }
+  });
+});
+
+describe('readAssignments', () => {
+  it('reads each registered experiment off the attributes, null when missing or invalid', () => {
+    expect(readAssignments((n) => (n === 'funnel_proof_v1' ? 'counter' : null))).toEqual({ funnel_proof_v1: 'counter' });
+    expect(readAssignments(() => null)).toEqual({ funnel_proof_v1: null });
+    expect(readAssignments(() => 'bogus')).toEqual({ funnel_proof_v1: null });
   });
 });
 

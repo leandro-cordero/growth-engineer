@@ -23,6 +23,9 @@ importers:
       '@upstash/redis':
         specifier: ^1.38.4
         version: 1.38.4
+      '@vercel/functions':
+        specifier: ^3.9.8
+        version: 3.9.8
       astro:
         specifier: ^7.3.2
         version: 7.3.2(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.3)(@upstash/redis@1.38.4)(@vercel/functions@3.9.8)(jiti@2.7.0)(sass@1.104.1)(yaml@2.9.1)

@@ -157,12 +157,3 @@
     }
   }
 }
-
-/* Experiment variant (docs/decisions.md > Analytics). The counter is prerendered, so there's no
-   flicker and no CLS. Markup: data-exp="funnel_proof_v1" data-variant="counter". The head script
-   sets <html funnel_proof_v1="counter">. Control has no markup of its own (it is "no counter"),
-   and without JS the attribute is absent, so control shows.
-   Unlayered on purpose: it must beat Tailwind's `display` utilities. */
-html:not([funnel_proof_v1="counter"]) [data-exp="funnel_proof_v1"][data-variant="counter"] {
-  display: none;
-}

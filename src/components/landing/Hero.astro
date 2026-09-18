@@ -1,0 +1,18 @@
+---
+import { OFFER_LINE } from "../../lib/cta";
+import CtaLink from "./CtaLink.astro";
+---
+
+<section aria-labelledby="hero-title" class="mx-auto max-w-3xl px-4 py-16">
+  <h1 id="hero-title">Test your strategy on past markets before you risk real money</h1>
+  <p class="mt-4">
+    FX Replay plays back historical charts bar by bar. Place simulated trades as the chart unfolds,
+    then review every decision.
+  </p>
+  <div class="mt-6">
+    <CtaLink position="hero" id="hero_primary" />
+    <p class="mt-3 text-sm text-ink-muted">{OFFER_LINE}</p>
+    {/* Counter variant only: the counter route fills this slot; control leaves it empty. */}
+    <slot name="proof" />
+  </div>
+</section>

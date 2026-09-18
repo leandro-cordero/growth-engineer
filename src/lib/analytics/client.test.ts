@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { findPropertyProblem, readSuperProps } from './client';
+import { findPropertyProblem, readAnonymousId, readSuperProps } from './client';
 
 const attrs: Record<string, string> = { funnel_proof_v1: 'counter', 'data-app-env': 'production' };
 const base = { attr: (n: string) => attrs[n] ?? null, cookie: 'fxr_aid=aid-1', search: '', lastTouch: null as string | null };
@@ -37,6 +37,14 @@ describe('readSuperProps', () => {
 
   it('survives corrupt stored values', () => {
     expect(() => readSuperProps({ ...base, cookie: 'fxr_aid=a; fxr_ft=%7Bnope', lastTouch: '{oops' })).not.toThrow();
+  });
+});
+
+describe('readAnonymousId', () => {
+  it('reads fxr_aid from the cookie string, null when absent', () => {
+    expect(readAnonymousId('a=1; fxr_aid=abc-123; b=2')).toBe('abc-123');
+    expect(readAnonymousId('a=1')).toBeNull();
+    expect(readAnonymousId('')).toBeNull();
   });
 });
 

@@ -34,9 +34,10 @@ Control plus one line below the offer line, in both places:
 - The number starts from a fixed base and goes up by one at random intervals (8–20s) while the
   page is open. It is a running total, never "today" or "in the last hour" (CLAUDE.md §5,
   no urgency theatre).
-- It sits below the offer line, so the offer doesn't move. Both lines are prerendered and the
-  inline head script picks the variant before paint, so there is no flicker and no layout shift
-  (the line reserves its width with tabular figures).
+- It sits below the offer line, so the offer doesn't move. Edge middleware serves each visitor
+  the prerendered HTML built for their variant, so control pages carry no counter markup and no
+  counter script, and there is no flicker and no layout shift (the counter is in the HTML on
+  first paint).
 - It is text in an `aria-live="off"` element, so screen readers don't announce every tick.
   Under `prefers-reduced-motion` the number still updates, without animation.
 
@@ -82,9 +83,10 @@ outside the primary population. Report them separately.
 
 ## Design
 
-- **Assignment:** deterministic hash of `fxr_aid` + `funnel_proof_v1`, computed by the inline
-  head script before paint. One visitor sees the same variant on both pages and on return
-  visits. Exposure = `landing_page_viewed`.
+- **Assignment:** deterministic hash of `fxr_aid` + `funnel_proof_v1`, computed at the edge by
+  the Routing Middleware, which rewrites counter visitors to the prerendered `/v/counter/*`
+  pages. One visitor sees the same variant on both pages and on return visits. Exposure =
+  `landing_page_viewed`.
 - **Size** (assumptions, not measurements: ~1,000 landing visitors/day, 10% baseline
   landing → account; `n ≈ 16·p(1−p)/Δ²`): **minimum detectable effect +20% relative (2 pp
   absolute), ~3,600 per arm**. At 1,000/day that's ~7 days, run as **2 whole weeks** so

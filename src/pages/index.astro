@@ -1,11 +1,6 @@
 ---
-import "../styles/global.css";
-import BaseLayout from "../layouts/BaseLayout.astro";
+// Control landing. The edge middleware rewrites counter visitors to /v/counter/.
+import LandingPage from "../components/landing/LandingPage.astro";
 ---
 
-<BaseLayout
-  title="Try FX Replay Free: backtest on past markets"
-  description="Replay past markets candle by candle, place simulated trades and review your decisions. Free forever. No credit card."
->
-  <main id="main" tabindex="-1">Hola, growth-fx</main>
-</BaseLayout>
+<LandingPage variant="control" />

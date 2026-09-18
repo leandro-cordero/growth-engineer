@@ -1,0 +1,27 @@
+---
+const items = [
+  { q: "Do I need a credit card?", a: "No. The free plan doesn't ask for card details." },
+  {
+    q: "Is this trading advice?",
+    a: "No. FX Replay is a practice tool. Simulated trades are hypothetical and don't show how you would do with real money.",
+  },
+  {
+    q: "Is this sign-up real?",
+    a: "No. This page is a demo built for a coding challenge. It saves your email to a test database, and no real FX Replay account is created.",
+  },
+];
+---
+
+<section aria-labelledby="faq-title" class="mx-auto max-w-3xl px-4 py-12">
+  <h2 id="faq-title">Questions before you start</h2>
+  <div class="mt-6 grid gap-3">
+    {
+      items.map((i) => (
+        <details class="rounded-md border border-line px-4 py-3">
+          <summary class="min-h-11 cursor-pointer py-2 font-bold">{i.q}</summary>
+          <p class="pb-2">{i.a}</p>
+        </details>
+      ))
+    }
+  </div>
+</section>
