@@ -2,7 +2,7 @@
 // visitors to their prerendered copy, so a visitor only ever receives their own variant's HTML.
 // The logic lives in src/lib/experiments/edge.ts. `astro dev` doesn't run this file: see
 // src/middleware.ts for the dev wrapper.
-import { next, rewrite } from '@vercel/functions';
+import { next, rewrite } from '@vercel/functions/middleware';
 import { decideVariant, serializeCookie } from './src/lib/experiments/edge';
 
 // The edge runtime provides `process.env`; @types/node isn't installed.
