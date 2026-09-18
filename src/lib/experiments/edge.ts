@@ -1,7 +1,7 @@
 // Framework-free: the one place that decides which variant a request gets. Two thin wrappers call
 // it: the root middleware.ts (Vercel Routing Middleware, production) and src/middleware.ts
 // (Astro, dev only, because `astro dev` doesn't run Vercel middleware).
-import { assign, EXPERIMENTS } from './bucket';
+import { assign, EXPERIMENTS } from './bucket.js';
 
 const KEY = 'funnel_proof_v1';
 const VARIANTS = EXPERIMENTS.find((e) => e.key === KEY)!.variants as readonly string[];

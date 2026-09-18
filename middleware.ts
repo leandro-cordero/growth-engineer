@@ -3,7 +3,7 @@
 // The logic lives in src/lib/experiments/edge.ts. `astro dev` doesn't run this file: see
 // src/middleware.ts for the dev wrapper.
 import { next, rewrite } from '@vercel/functions/middleware';
-import { decideVariant, serializeCookie } from './src/lib/experiments/edge';
+import { decideVariant, serializeCookie } from './src/lib/experiments/edge.js';
 
 // The edge runtime provides `process.env`; @types/node isn't installed.
 declare const process: { env: Record<string, string | undefined> };

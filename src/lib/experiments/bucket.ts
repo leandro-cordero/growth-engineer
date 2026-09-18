@@ -41,7 +41,7 @@ export function cleanExperiments(input: unknown): ExperimentMap {
   const src = typeof input === 'object' && input !== null ? (input as Record<string, unknown>) : {};
   const out = {} as ExperimentMap;
   for (const { key, variants } of EXPERIMENTS) {
-    const v = Object.hasOwn(src, key) ? src[key] : null;
+    const v = Object.prototype.hasOwnProperty.call(src, key) ? src[key] : null;
     out[key] = typeof v === 'string' && (variants as readonly string[]).includes(v) ? v : null;
   }
   return out;
