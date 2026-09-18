@@ -6,6 +6,7 @@ type Prim = string | number | boolean | null;
 const UTM_KEYS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term'] as const;
 const FIRST_TOUCH_COOKIE = 'fxr_ft';
 const LAST_TOUCH_KEY = 'fxr_lt';
+const HANDOFF_KEY = 'fxr_handoff';
 
 // ---------------------------------------------------------------- super properties (pure)
 
@@ -75,6 +76,31 @@ export function findPropertyProblem(props: Record<string, unknown>): string | nu
   return null;
 }
 
+// ---------------------------------------------------------------- navigation handoff (pure)
+
+/** An event from a click that left the page before posthog-js loaded, stored for the next page. */
+export interface Handoff {
+  name: ClientEventName;
+  props: Record<string, Prim>;
+  uuid: string;
+  /** Click time, epoch ms. */
+  ts: number;
+}
+
+const HANDOFF_MAX_AGE_MS = 30 * 60 * 1000;
+
+/** Parses the stored handoff. Null for missing, corrupt, or older than 30 minutes (a stale tab). */
+export function readHandoff(raw: string | null, now: number): Handoff | null {
+  try {
+    const h = raw ? JSON.parse(raw) : null;
+    const valid =
+      h && typeof h.name === 'string' && typeof h.uuid === 'string' && typeof h.ts === 'number' && h.props && typeof h.props === 'object';
+    return valid && now - h.ts <= HANDOFF_MAX_AGE_MS ? (h as Handoff) : null;
+  } catch {
+    return null;
+  }
+}
+
 // ---------------------------------------------------------------- loader + track
 
 type PostHogLike = typeof import('posthog-js').default;
@@ -94,13 +120,37 @@ const run = (job: Job) => {
   }
 };
 
+function devCheck(name: string, props: object): void {
+  if (!import.meta.env.DEV) return;
+  const problem = findPropertyProblem(props as Record<string, unknown>);
+  if (problem) console.warn(`[analytics] ${name}: ${problem}`);
+}
+
 /** Never throws. Calls before PostHog has loaded are queued and flushed after `init`. */
 export function track<N extends ClientEventName>(name: N, props: EventProps<N>): void {
-  if (import.meta.env.DEV) {
-    const problem = findPropertyProblem(props as Record<string, unknown>);
-    if (problem) console.warn(`[analytics] ${name}: ${problem}`);
-  }
+  devCheck(name, props);
   run((ph) => ph.capture(name, props as Record<string, unknown>));
+}
+
+// Beacon: survives the page unloading. The fixed uuid makes a double send count once.
+const beacon = (ph: PostHogLike, h: Handoff) =>
+  ph.capture(h.name, h.props, { uuid: h.uuid, timestamp: new Date(h.ts), send_instantly: true, transport: 'sendBeacon' });
+
+/**
+ * For a click that navigates away. `track()` would queue or batch the event and lose it on unload.
+ * With posthog-js loaded, it goes out now by beacon; otherwise it's handed to the next page through
+ * sessionStorage and sent there with the click's own time. Never throws.
+ */
+export function trackNavigation<N extends ClientEventName>(name: N, props: EventProps<N>): void {
+  devCheck(name, props);
+  if (started && !enabled) return; // analytics off
+  const h: Handoff = { name, props: props as Record<string, Prim>, uuid: crypto.randomUUID(), ts: Date.now() };
+  try {
+    if (ready) beacon(ready, h);
+    else sessionStorage.setItem(HANDOFF_KEY, JSON.stringify(h));
+  } catch (err) {
+    console.warn('analytics navigation event failed', err);
+  }
 }
 
 /** Backup merge after the server's alias: ties this browser to the new user id. */
@@ -153,6 +203,10 @@ export function initAnalytics({ key, host }: { key?: string; host: string }): vo
         if (new URLSearchParams(location.search).get('internal') === '1') posthog.opt_out_capturing();
 
         ready = posthog;
+        // A navigation event handed over by the previous page (or by this one, if it's unloading).
+        const handoff = readHandoff(safeGet(() => sessionStorage.getItem(HANDOFF_KEY)), Date.now());
+        safeGet(() => sessionStorage.removeItem(HANDOFF_KEY));
+        if (handoff) safeGet(() => beacon(posthog, handoff));
         const jobs = queue;
         queue = [];
         for (const job of jobs) run(job);

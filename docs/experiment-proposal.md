@@ -1,7 +1,7 @@
 # Experiment proposal — `funnel_proof_v1`
 
 **Surface:** `/` (hero) and `/signup` (submit) · **Lever:** a live-style signup counter as social
-proof · **Status:** proposed, not running.
+proof · **Status:** running since 2026-09-18 (PostHog experiment 465468, project 614703).
 Measurement plumbing: `docs/analytics-plan.md` §5–6. Evidence: growth-research §C.3–C.4.
 
 ---

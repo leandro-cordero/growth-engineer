@@ -36,16 +36,16 @@ const { variant } = Astro.props;
   <StickyCta />
 
   <script>
-    import { track } from "../../lib/analytics/client";
+    import { track, trackNavigation } from "../../lib/analytics/client";
 
     track("landing_page_viewed", { is_returning: /(?:^|; )fxr_ret=1/.test(document.cookie) });
 
-    // One delegated listener for every CTA. A click that navigates before posthog-js loads can be
-    // dropped; `?entry=` on the signup page recovers the position.
+    // One delegated listener for every CTA. The click navigates, so it goes through
+    // trackNavigation(): beacon now, or handed to /signup if posthog-js hasn't loaded yet.
     document.addEventListener("click", (event) => {
       const cta = (event.target as Element | null)?.closest<HTMLElement>("[data-cta-id]");
       if (!cta) return;
-      track("cta_clicked", {
+      trackNavigation("cta_clicked", {
         cta_id: cta.dataset.ctaId ?? "",
         cta_label: cta.textContent?.trim() ?? "",
         cta_position: cta.dataset.ctaPosition ?? "",

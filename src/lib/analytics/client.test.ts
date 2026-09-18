@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { findPropertyProblem, readAnonymousId, readSuperProps } from './client';
+import { findPropertyProblem, readAnonymousId, readHandoff, readSuperProps } from './client';
 
 const attrs: Record<string, string> = { funnel_proof_v1: 'counter', 'data-app-env': 'production' };
 const base = { attr: (n: string) => attrs[n] ?? null, cookie: 'fxr_aid=aid-1', search: '', lastTouch: null as string | null };
@@ -60,5 +60,24 @@ describe('findPropertyProblem', () => {
     [{ utm_source: 'x' }, 'super property'],
   ])('flags %j', (props, why) => {
     expect(findPropertyProblem(props)).toContain(why);
+  });
+});
+
+describe('readHandoff', () => {
+  const h = { name: 'cta_clicked', props: { cta_id: 'hero_primary' }, uuid: 'u-1', ts: 1_000_000 };
+
+  it('returns a fresh handoff as stored', () => {
+    expect(readHandoff(JSON.stringify(h), h.ts + 5_000)).toEqual(h);
+  });
+
+  it('drops a handoff older than 30 minutes (a stale tab)', () => {
+    expect(readHandoff(JSON.stringify(h), h.ts + 31 * 60 * 1000)).toBeNull();
+  });
+
+  it('returns null for missing, corrupt or mis-shaped values', () => {
+    expect(readHandoff(null, 0)).toBeNull();
+    expect(readHandoff('{oops', 0)).toBeNull();
+    expect(readHandoff(JSON.stringify({ ...h, uuid: 1 }), h.ts)).toBeNull();
+    expect(readHandoff(JSON.stringify({ ...h, props: null }), h.ts)).toBeNull();
   });
 });
