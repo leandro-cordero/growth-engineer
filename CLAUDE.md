@@ -105,7 +105,7 @@
     research/                growth research brief (evidence, cite §)
     decisions.md             short "why" entries by area; append when a choice is non-obvious
     analytics-plan.md        funnel, taxonomy, data quality 
-    experiment.md            hero_offer_v1 proposal          
+    experiment-proposal.md   signup_proof_v1 proposal (+ hero_offer_v1 note)
     architecture.md          structure, trade-offs, infra    
     performance-review.md    CWV, SEO, a11y, caching, risks 
     ai-workflow.md           Claude Code system + judgment 
