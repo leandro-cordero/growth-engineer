@@ -35,7 +35,7 @@
   - Events: snake_case `object_action`, past tense (`cta_clicked`, `account_created`).
   - Event properties: snake_case, flat, primitives. `null`, never an omitted key.
   - Env: `SCREAMING_SNAKE`; `PUBLIC_` prefix **only if** the browser may read it.
-  - Experiment keys: `<surface>_<lever>_v<n>` (`hero_offer_v1`). Variants: `control` + a descriptive name.
+  - Experiment keys: `<surface>_<lever>_v<n>` (`funnel_proof_v1`). Variants: `control` + a descriptive name.
 
   ---
 
@@ -105,7 +105,7 @@
     research/                growth research brief (evidence, cite §)
     decisions.md             short "why" entries by area; append when a choice is non-obvious
     analytics-plan.md        funnel, taxonomy, data quality 
-    experiment-proposal.md   signup_proof_v1 proposal (+ hero_offer_v1 note)
+    experiment-proposal.md   funnel_proof_v1 proposal
     architecture.md          structure, trade-offs, infra    
     performance-review.md    CWV, SEO, a11y, caching, risks 
     ai-workflow.md           Claude Code system + judgment 

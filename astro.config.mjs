@@ -15,6 +15,13 @@ export default defineConfig({
       UPSTASH_REDIS_REST_TOKEN: envField.string({ context: 'server', access: 'secret', optional: true }),
       // Bearer token for GET /api/users and admin PATCH.
       USERS_ADMIN_TOKEN: envField.string({ context: 'server', access: 'secret', optional: true }),
+      // PostHog project key. Public by design: the browser needs it. Missing => analytics off.
+      PUBLIC_POSTHOG_KEY: envField.string({ context: 'client', access: 'public', optional: true }),
+      // Where posthog-js sends events. `/rly` is the same-origin proxy (vercel.json). `astro dev`
+      // doesn't apply Vercel rewrites, so locally set it to https://us.i.posthog.com.
+      PUBLIC_POSTHOG_HOST: envField.string({ context: 'client', access: 'public', default: '/rly' }),
+      // posthog-node ingestion host (server to PostHog directly, no proxy).
+      POSTHOG_HOST: envField.string({ context: 'server', access: 'public', optional: true }),
       // Set by Vercel: production | preview | development. Prefixes Redis keys.
       VERCEL_ENV: envField.enum({
         context: 'server',

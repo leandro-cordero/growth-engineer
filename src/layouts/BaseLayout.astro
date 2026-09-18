@@ -1,5 +1,8 @@
 ---
 import { Font } from "astro:assets";
+import { VERCEL_ENV } from "astro:env/server";
+import { EXPERIMENTS } from "../lib/experiments/bucket";
+import headScript from "../lib/experiments/head-script.js?raw";
 import "../styles/global.css";
 
 interface Props {
@@ -11,15 +14,23 @@ const { title, description } = Astro.props;
 const canonical = Astro.site
   ? new URL(Astro.url.pathname, Astro.site).href
   : undefined;
+
+// Runs at build: tells the browser which environment produced the page.
+const appEnv = VERCEL_ENV ?? "development";
+// [[key, variants], ...]: the head script buckets the visitor with the same registry as assign().
+const registry = JSON.stringify(EXPERIMENTS.map((e) => [e.key, e.variants]));
 ---
 
-<html lang="en">
+<html lang="en" data-app-env={appEnv}>
   <head>
     <meta charset="utf-8" />
     <meta
       name="viewport"
       content="width=device-width, initial-scale=1, viewport-fit=cover"
     />
+    <!-- Sync, dependency-free, < 1KB: assigns experiment variants before first paint. -->
+    <script is:inline set:html={`(function(E){${headScript}})(${registry})`}
+    ></script>
     <title>{title}</title>
     <meta name="description" content={description} />
     {canonical && <link rel="canonical" href={canonical} />}
@@ -37,5 +48,11 @@ const canonical = Astro.site
     <div class="page-backdrop" aria-hidden="true"></div>
     <a class="skip-link" href="#main">Skip to content</a>
     <slot />
+    <script>
+      import { PUBLIC_POSTHOG_HOST, PUBLIC_POSTHOG_KEY } from "astro:env/client";
+      import { initAnalytics } from "../lib/analytics/client";
+
+      initAnalytics({ key: PUBLIC_POSTHOG_KEY, host: PUBLIC_POSTHOG_HOST });
+    </script>
   </body>
 </html>

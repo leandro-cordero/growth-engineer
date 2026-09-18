@@ -1,5 +1,7 @@
 import { Redis } from '@upstash/redis';
-import { UPSTASH_REDIS_REST_TOKEN, UPSTASH_REDIS_REST_URL, USERS_ADMIN_TOKEN, VERCEL_ENV } from 'astro:env/server';
+import { PUBLIC_POSTHOG_KEY } from 'astro:env/client';
+import { POSTHOG_HOST, UPSTASH_REDIS_REST_TOKEN, UPSTASH_REDIS_REST_URL, USERS_ADMIN_TOKEN, VERCEL_ENV } from 'astro:env/server';
+import { createAccountCreatedSender, createPostHogClient } from '../analytics/server';
 import { createUsersHandlers } from './handlers';
 import { createUsersService } from './service';
 import { memoryStore, redisStore } from './store';
@@ -19,13 +21,16 @@ function chooseStore() {
 }
 
 // Built on first request, so importing this module (build, type check) never throws.
+// The PostHog client is a module-level singleton: no shutdown() per request.
 let handlers: ReturnType<typeof createUsersHandlers> | undefined;
 const get = () =>
   (handlers ??= createUsersHandlers({
     service: createUsersService({
       store: chooseStore(),
-      // TODO: call analytics/server.ts accountCreated() here once that module exists.
-      onAccountCreated: async () => {},
+      onAccountCreated: createAccountCreatedSender({
+        client: PUBLIC_POSTHOG_KEY ? createPostHogClient(PUBLIC_POSTHOG_KEY, POSTHOG_HOST ?? 'https://us.i.posthog.com') : null,
+        appEnv: VERCEL_ENV ?? 'development',
+      }),
     }),
     adminToken: USERS_ADMIN_TOKEN,
     isProd,

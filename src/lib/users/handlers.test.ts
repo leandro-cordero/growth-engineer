@@ -87,6 +87,26 @@ describe('POST /api/users', () => {
     expect(onAccountCreated.mock.calls[0]?.[0]).toMatchObject({ is_suspected_bot: true });
   });
 
+  it('passes created_at and the cleaned experiments map to account_created', async () => {
+    const { handlers, onAccountCreated } = setup();
+    const res = await handlers.create(
+      post({ email: 'a@gmail.com', anonymous_id: 'anon-1', experiments: { funnel_proof_v1: 'bogus', evil_v1: 'x' } }),
+    );
+    const { user } = await res.json();
+    expect(onAccountCreated.mock.calls[0]?.[0]).toMatchObject({
+      user_id: user.id,
+      created_at: user.created_at,
+      anonymous_id: 'anon-1',
+      experiments: { funnel_proof_v1: null },
+    });
+  });
+
+  it('keeps a valid funnel_proof_v1 variant', async () => {
+    const { handlers, onAccountCreated } = setup();
+    await handlers.create(post({ email: 'b@gmail.com', experiments: { funnel_proof_v1: 'counter' } }));
+    expect(onAccountCreated.mock.calls[0]?.[0].experiments).toEqual({ funnel_proof_v1: 'counter' });
+  });
+
   it('still returns 201 when analytics throws', async () => {
     const { handlers } = setup({
       onAccountCreated: async () => {

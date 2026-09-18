@@ -23,7 +23,7 @@ Read `CLAUDE.md` §5 first. For offer/proof context, read
 | C5 | Testimonials: typical experience only, no results; disclose material connections (free Pro, affiliate) next to the quote | "I passed my prop challenge in a week" | Process-focused quote + "Received free Pro access" |
 | C6 | No urgency theatre: countdowns, "only N spots", "N signed up today", expiring free offers | "Offer ends tonight" | Nothing, or real permanent facts ("Free plan, no card") |
 | C7 | Auth is simulated. Never imply a real Google sign-in or account security that doesn't exist | "Securely sign in with Google" | "Demo sign-in, no real Google account is used" |
-| C8 | Offer statements are true for the variant shown (`hero_offer_v1`: control vs trial) and one offer per page | "Free forever" next to "5-day trial" | One offer, stated the same way everywhere |
+| C8 | One offer per page, stated the same way everywhere, and true for the variant shown | "Free forever" next to "5-day trial" | One offer, stated the same way everywhere |
 | C9 | No disparaging, unverifiable competitor comparisons ("the only", "#1", "best") | "The #1 backtesting tool" | Specific, checkable capability |
 
 Scan for these trigger words and justify or remove each: *profit, profitable, income,

@@ -1,3 +1,4 @@
+import { cleanExperiments, type ExperimentMap } from '../experiments/bucket';
 import type { EmailDomainType } from './email';
 import { emailDomainType } from './email';
 import type { CreateUserInput, UpdateUserInput, User } from './schema';
@@ -6,11 +7,13 @@ import type { Store, StoredResponse } from './store';
 export interface AccountCreatedEvent {
   user_id: string;
   idempotency_key: string;
+  created_at: string;
   method: 'email';
   email_domain_type: EmailDomainType;
   is_suspected_bot: boolean;
   anonymous_id: string | null;
-  experiments: CreateUserInput['experiments'];
+  /** Every registered experiment, `null` when not enrolled or the client sent junk. */
+  experiments: ExperimentMap;
 }
 
 export interface ServiceDeps {
@@ -100,11 +103,13 @@ export function createUsersService({
       await onAccountCreated({
         user_id: user.id,
         idempotency_key: key,
+        created_at: user.created_at,
         method: input.method,
         email_domain_type: emailDomainType(user.email),
         is_suspected_bot: isBot,
         anonymous_id: input.anonymous_id,
-        experiments: input.experiments,
+        // The server trusts the client's assignment after cleaning it against the registry.
+        experiments: cleanExperiments(input.experiments),
       }).catch((err) => console.error('account_created failed', err));
       return response;
     },
