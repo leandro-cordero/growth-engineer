@@ -57,7 +57,7 @@ landing_page_viewed → cta_clicked → signup_viewed → signup_started → sig
 | Event | Side | Trigger | Properties | Answers |
 |---|---|---|---|---|
 | `landing_page_viewed` | client | landing module script, once per load | `is_returning` | Funnel entry; experiment exposure for `funnel_proof_v1`; sample-ratio check |
-| `cta_clicked` | client | one delegated listener on `[data-cta-id]` | `cta_id`, `cta_label`, `cta_position` (`hero`/`sticky`/`final`…) | Which CTA position drives signups |
+| `cta_clicked` | client | one delegated listener on `[data-cta-id]` | `cta_id`, `cta_label`, `cta_position` (`hero`/`header`/`sticky`/`final`…) | Which CTA position drives signups |
 | `signup_viewed` | client | `SignupForm` mount | `entry_point` (from `?entry=`) | Landing → signup handoff; exposure for visitors who land directly on `/signup` |
 | `signup_started` | client | first field focus, or the Google button | `method` (`email`/`google`), `field_first_touched` | Friction before the first keystroke |
 | `signup_field_errored` | client | client validation or a server field error | `field`, `error_code`, `error_source` (`client`/`server`), `attempt_n` | Where validation friction is |

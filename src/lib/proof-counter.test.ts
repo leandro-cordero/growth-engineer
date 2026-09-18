@@ -51,6 +51,26 @@ describe('startCounter', () => {
     expect(el.textContent).toBe('12,482');
   });
 
+  it('rolls each new number in: a fresh .proof-counter__digit element per tick, none on first paint', () => {
+    vi.useFakeTimers();
+    const made: Array<{ className: string; textContent: string | null }> = [];
+    const el = {
+      textContent: '' as string | null,
+      ownerDocument: { createElement: () => { const n = { className: '', textContent: '' as string | null }; made.push(n); return n; } },
+      replaceChildren: vi.fn(),
+    };
+    startCounter(el, { doc: fakeDoc(), rand: () => 0 });
+    expect(el.textContent).toBe('12,480');
+    expect(made).toHaveLength(0);
+    vi.advanceTimersByTime(8000);
+    vi.advanceTimersByTime(8000);
+    expect(made.map((n) => [n.className, n.textContent])).toEqual([
+      ['proof-counter__digit', '12,481'],
+      ['proof-counter__digit', '12,482'],
+    ]);
+    expect(el.replaceChildren).toHaveBeenCalledTimes(2);
+  });
+
   it('stops ticking and unsubscribes when stopped', () => {
     vi.useFakeTimers();
     const doc = fakeDoc();

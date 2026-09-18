@@ -19,16 +19,23 @@ const { variant } = Astro.props;
   canonicalPath="/signup"
   noindex={variant !== "control"}
 >
-  <header class="mx-auto max-w-md px-4 py-4">
-    <a href="/" class="inline-flex min-h-11 items-center font-heading text-lg font-bold">FX Replay</a>
+  <header class="border-b border-line">
+    <div class="mx-auto flex min-h-(--height-header) max-w-(--width-page) items-center px-(--space-gutter)">
+      <a class="signup__home" href="/">
+        <img class="signup__logo" src="/logos/FXReplayLogo.svg" alt="FX Replay home" width="1609" height="209" />
+      </a>
+    </div>
   </header>
-  <main id="main" tabindex="-1" class="mx-auto max-w-md px-4 py-8">
-    <h1>Create your free account</h1>
-    <p class="mt-2">Practise your setups on past markets without risking real money.</p>
-    <p class="mt-4 text-sm text-ink-muted">
-      Demo: this sign-up saves your email to a test database. No real FX Replay account is created.
-    </p>
-    <div class="mt-6">
+
+  <main id="main" tabindex="-1" class="px-(--space-gutter) py-10 md:py-16">
+    <div class="mx-auto flex w-full max-w-md flex-col gap-6">
+      <div class="flex flex-col gap-3">
+        <h1 class="signup__title">Create your free account</h1>
+        <p class="signup__lead">Practise your setups on past markets without risking real money.</p>
+        <p class="signup__fineprint">
+          Demo: this sign-up saves your email to a test database. No real FX Replay account is created.
+        </p>
+      </div>
       <SignupForm client:load variant={variant} />
     </div>
   </main>

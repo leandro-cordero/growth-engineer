@@ -135,7 +135,7 @@
         store.ts             Store interface · memoryStore · redisStore (chosen by env)
         service.ts           create/update/list; emits account_created
       signup/api.ts          typed browser client for /api/users
-    styles/                  tokens.css · global.css
+    styles/                  tokens.css · global.css · components.scss (BEM classes) · _utils.scss
   ```
   
   - A new top-level folder, dependency or abstraction gets an entry in `docs/decisions.md`.

@@ -72,8 +72,42 @@ curl -X POST http://localhost:4321/api/users \
 curl http://localhost:4321/api/users
 ```
 
-Force an experiment variant outside production with `?fxr_variant=control` or
-`?fxr_variant=counter` (e.g. `http://localhost:4321/?fxr_variant=counter`).
+## Seeing each experiment variant
+
+`funnel_proof_v1` has two variants: `control` (no signup counter) and `counter` (a signup counter
+under the hero CTA and under the `/signup` submit button). A visitor gets one of them, chosen by
+the edge middleware, and keeps it on every page and return visit.
+
+**How the variant is chosen.** There is no variant cookie. The middleware reads the `fxr_aid`
+cookie (the anonymous visitor id; it mints one on the first visit) and hashes it with the
+experiment key (`assign()` in `src/lib/experiments/bucket.ts`), so the same id always lands in the
+same variant. That means a fresh browser is roughly a coin flip, and **`fxr_aid` is the cookie to
+change** to switch variants.
+
+**Two ways to see the other one (dev and preview only, never production):**
+
+| How | Steps |
+|---|---|
+| **URL override** (easiest) | Open `/?fxr_variant=counter` or `/?fxr_variant=control`. The override applies to that request only, so keep the parameter on each page you visit, or use the cookie below. |
+| **`fxr_aid` cookie** | In DevTools › Application › Cookies, set `fxr_aid` to `qa-0001` (→ `counter`) or `qa-0005` (→ `control`), then reload. It sticks across pages until you change it. Deleting the cookie gets you a new random id, and so a random variant. |
+
+Other ids work too: any 8–64 characters of `A-Z a-z 0-9 _ -` is accepted, and its variant is
+whatever `assign('funnel_proof_v1', id)` returns.
+
+**Good to know**
+
+- The override is ignored in production (`VERCEL_ENV=production`), so real traffic can't be steered
+  by a URL. Preview deployments honour it.
+- `astro dev` doesn't run the root `middleware.ts`; `src/middleware.ts` (dev only) runs the same
+  `decideVariant()` instead. **Restart the dev server after changing either middleware**, or the old
+  code keeps serving. A server started before the middleware existed always returns `control`,
+  whatever the URL or cookie says.
+- Opening `/v/counter/` directly redirects (307) to `/`, so nobody can choose a variant by URL. To
+  reach the counter copy, go through `/` with the override or the cookie.
+- The served page carries its variant on `<html funnel_proof_v1="…">`, so View Source or DevTools
+  › Elements tells you which one you got. Control HTML has no counter markup at all.
+- Your visits from a browser with `?internal=1` are excluded from analytics (opted out), which is
+  handy for QA on production; see `docs/analytics-plan.md`.
 
 ## Project layout
 

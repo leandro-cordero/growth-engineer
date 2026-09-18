@@ -4,8 +4,9 @@ import { CTA_LABEL, OFFER_LINE } from '../../lib/cta';
 import { createUser } from '../../lib/signup/api';
 import { messageFor } from '../../lib/signup/messages';
 import { isAllowedEmail } from '../../lib/users/email';
-import ProfileStep, { FieldError } from './ProfileStep';
+import ProfileStep, { FieldError, FormAlert } from './ProfileStep';
 import ProofCounter from './ProofCounter';
+import { CheckIcon, GoogleIcon, InfoIcon, SpinnerIcon } from './SignupIcons';
 
 type Phase = 'form' | 'submitting' | 'profile' | 'saving' | 'done';
 interface FormError {
@@ -125,37 +126,43 @@ export default function SignupForm({ variant }: { variant: 'control' | 'counter'
 
   if (phase === 'done') {
     return (
-      <>
+      <div className="flex flex-col gap-6">
         {liveRegion}
-        <section aria-labelledby="done-title">
+        <section aria-labelledby="done-title" className="signup__panel">
           <h2 id="done-title">You're all set</h2>
-          <p className="mt-2">
+          <p className="signup__lead">
             This was a demo sign-up, so there's no app to open here. On FX Replay, your next step would be your first replay session.
           </p>
-          <a href="/" className="mt-6 inline-flex min-h-11 items-center rounded-md border border-line-control px-6 font-bold hover:bg-surface-3 active:bg-surface-2">
+          <a href="/" className="inline-link">
             Back to the home page
           </a>
         </section>
-      </>
+      </div>
     );
   }
 
   if (phase === 'profile' || phase === 'saving') {
     return (
-      <>
+      <div className="flex flex-col gap-6">
         {liveRegion}
+        <p className="signup__badge">
+          <CheckIcon className="signup__badge-icon" />
+          Account created
+        </p>
         <ProfileStep userId={userId} saving={phase === 'saving'} onSaving={(s) => setPhase(s ? 'saving' : 'profile')} onDone={() => setPhase('done')} />
-      </>
+      </div>
     );
   }
 
   const submitting = phase === 'submitting';
   const errorText = error ? messageFor(error.code, error.status) : null;
+  const fieldError = error && error.source !== 'request' ? errorText : null;
+  const requestError = error && error.source === 'request' ? errorText : null;
 
   return (
-    <>
+    <div className="flex flex-col gap-6">
       {liveRegion}
-      <div>
+      <div className="flex flex-col gap-3">
         <button
           type="button"
           onClick={() => {
@@ -163,29 +170,30 @@ export default function SignupForm({ variant }: { variant: 'control' | 'counter'
             setGoogleNote(true);
           }}
           aria-describedby={googleNote ? 'google-note' : undefined}
-          className="inline-flex min-h-11 w-full items-center justify-center rounded-md border border-line-control px-6 font-bold hover:bg-surface-3 active:bg-surface-2"
+          className="signup__button signup__button--secondary"
         >
+          <GoogleIcon className="signup__button-icon" />
           Continue with Google (demo)
         </button>
         {googleNote && (
-          <p id="google-note" className="mt-2 text-sm text-ink-muted">
+          <p id="google-note" className="signup__notice">
+            <InfoIcon className="signup__notice-icon" label="Note" />
             Google sign-in isn't connected in this demo. Use your email below.
           </p>
         )}
       </div>
 
-      <p className="my-5 text-center text-ink-muted" aria-hidden="true">
-        or
+      <p className="signup__divider" aria-hidden="true">
+        <span>or</span>
       </p>
 
-      <form onSubmit={onSubmit} noValidate className="grid gap-5">
-        <div>
-          <label htmlFor="email" className="block font-bold">
+      <form onSubmit={onSubmit} noValidate className="flex flex-col gap-5">
+        {requestError && <FormAlert text={requestError} />}
+
+        <div className="flex flex-col gap-2">
+          <label htmlFor="email" className="signup__label">
             Email
           </label>
-          <p id="email-hint" className="text-sm text-ink-muted">
-            Use a personal address: Gmail, Outlook, iCloud, Yahoo, Proton or AOL.
-          </p>
           <input
             ref={emailRef}
             id="email"
@@ -193,37 +201,48 @@ export default function SignupForm({ variant }: { variant: 'control' | 'counter'
             type="email"
             inputMode="email"
             autoComplete="email"
+            autoCapitalize="off"
+            autoCorrect="off"
+            spellCheck={false}
             required
+            maxLength={254}
+            readOnly={submitting}
             onFocus={() => trackStarted('email')}
             onBlur={onBlur}
             onChange={() => setError(null)}
-            aria-invalid={error ? true : undefined}
-            aria-describedby={error ? 'email-hint email-error' : 'email-hint'}
-            className="mt-1 min-h-11 w-full rounded-md border border-line-control bg-surface-2 px-3 text-ink"
+            aria-invalid={fieldError ? true : undefined}
+            aria-describedby={fieldError ? 'email-error email-hint' : 'email-hint'}
+            className="signup__input"
           />
-          {errorText && <FieldError id="email-error" text={errorText} />}
+          {fieldError && <FieldError id="email-error" text={fieldError} />}
+          <p id="email-hint" className="signup__hint">
+            Use a personal address: Gmail, Outlook, iCloud, Yahoo, Proton or AOL.
+          </p>
         </div>
 
         {/* Honeypot: off-screen, out of the tab order and hidden from assistive tech. */}
-        <div aria-hidden="true" className="absolute -left-[9999px] h-px w-px overflow-hidden">
+        <div aria-hidden="true" className="signup__hp">
           <label htmlFor="website">Leave this field empty</label>
           <input ref={honeypotRef} id="website" name="website" type="text" tabIndex={-1} autoComplete="off" />
         </div>
 
-        <div>
-          <button
-            type="submit"
-            disabled={submitting}
-            aria-busy={submitting}
-            className="inline-flex min-h-11 w-full items-center justify-center rounded-md bg-brand px-6 font-bold text-on-brand hover:bg-brand-hover active:bg-brand-pressed disabled:cursor-not-allowed disabled:bg-brand-disabled disabled:text-ink-disabled"
-          >
-            {submitting ? 'Creating your account…' : CTA_LABEL}
-          </button>
-          {/* Order under the button: offer line, then the counter (variant only). The offer never moves. */}
-          <p className="mt-3 text-sm text-ink-muted">{OFFER_LINE}</p>
+        <button type="submit" disabled={submitting} aria-busy={submitting} className="signup__button">
+          {submitting ? (
+            <>
+              <SpinnerIcon className="signup__spinner" />
+              Creating your account…
+            </>
+          ) : (
+            CTA_LABEL
+          )}
+        </button>
+
+        {/* Order under the button: offer line, then the counter (variant only). The offer never moves. */}
+        <div className="flex flex-col gap-2">
+          <p className="cta-offer">{OFFER_LINE}</p>
           {variant === 'counter' && <ProofCounter />}
         </div>
       </form>
-    </>
+    </div>
   );
 }

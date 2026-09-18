@@ -48,12 +48,32 @@ export function startTicking(onTick: () => void, { doc = document, rand = Math.r
   };
 }
 
-/** Counts up from PROOF_BASE by one per tick and writes the formatted number into `el`. */
-export function startCounter(el: { textContent: string | null }, options?: Options): () => void {
+/** What `startCounter` needs from an element. A real element also has `ownerDocument`. */
+export interface CounterEl {
+  textContent: string | null;
+  ownerDocument?: { createElement(tag: 'span'): { className: string; textContent: string | null } } | null;
+  replaceChildren?(...nodes: unknown[]): void;
+}
+
+// Replace the number with a fresh element so the CSS roll-up animation restarts on every tick.
+function showCount(el: CounterEl, text: string) {
+  const doc = el.ownerDocument;
+  if (!doc || !el.replaceChildren) {
+    el.textContent = text;
+    return;
+  }
+  const digit = doc.createElement('span');
+  digit.className = 'proof-counter__digit';
+  digit.textContent = text;
+  el.replaceChildren(digit);
+}
+
+/** Counts up from PROOF_BASE by one per tick; each new number rolls up into place. */
+export function startCounter(el: CounterEl, options?: Options): () => void {
   let count = PROOF_BASE;
-  el.textContent = formatCount(count);
+  el.textContent = formatCount(count); // First paint: no animation.
   return startTicking(() => {
     count += 1;
-    el.textContent = formatCount(count);
+    showCount(el, formatCount(count));
   }, options);
 }

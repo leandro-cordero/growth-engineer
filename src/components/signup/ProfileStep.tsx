@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { track } from '../../lib/analytics/client';
 import { updateUser, type UpdateInput } from '../../lib/signup/api';
 import { messageFor, PROFILE_FAILURE } from '../../lib/signup/messages';
+import { SpinnerIcon, WarningIcon } from './SignupIcons';
 
 const LEVELS = [
   { value: 'new', label: "I'm new to trading" },
@@ -55,14 +56,19 @@ export default function ProfileStep({ userId, saving, onSaving, onDone }: Props)
   }
 
   return (
-    <section aria-labelledby="profile-title">
-      <h2 id="profile-title" ref={heading} tabIndex={-1}>
-        Your account is ready
-      </h2>
-      <p className="mt-2">Tell us how you trade. It's optional, and you can skip it.</p>
-      <form onSubmit={save} noValidate className="mt-6 grid gap-5">
-        <div>
-          <label htmlFor="display-name" className="block font-bold">
+    <section aria-labelledby="profile-title" className="flex flex-col gap-6">
+      <div className="flex flex-col gap-3">
+        <h2 id="profile-title" ref={heading} tabIndex={-1}>
+          Your account is ready
+        </h2>
+        <p className="signup__lead">Tell us how you trade. It's optional, and you can skip it.</p>
+      </div>
+
+      <form onSubmit={save} noValidate className="signup__panel">
+        {errors.form && <FormAlert text={errors.form} />}
+
+        <div className="flex flex-col gap-2">
+          <label htmlFor="display-name" className="signup__label">
             What should we call you?
           </label>
           <input
@@ -72,19 +78,28 @@ export default function ProfileStep({ userId, saving, onSaving, onDone }: Props)
             autoComplete="given-name"
             value={name}
             onChange={(e) => setName(e.target.value)}
+            readOnly={saving}
             aria-invalid={errors.name ? true : undefined}
             aria-describedby={errors.name ? 'display-name-error' : undefined}
-            className="mt-1 min-h-11 w-full rounded-md border border-line-control bg-surface-2 px-3 text-ink"
+            className="signup__input"
           />
           {errors.name && <FieldError id="display-name-error" text={errors.name} />}
         </div>
 
-        <fieldset aria-describedby={errors.level ? 'level-error' : undefined}>
-          <legend className="font-bold">How much trading experience do you have?</legend>
-          <div className="mt-1 grid gap-1">
+        <fieldset aria-describedby={errors.level ? 'level-error' : undefined} className="signup__fieldset">
+          <legend className="signup__legend">How much trading experience do you have?</legend>
+          <div className="signup__options">
             {LEVELS.map((l) => (
-              <label key={l.value} className="flex min-h-11 items-center gap-3">
-                <input type="radio" name="experience_level" value={l.value} checked={level === l.value} onChange={() => setLevel(l.value)} className="size-5" />
+              <label key={l.value} className="signup__option">
+                <input
+                  type="radio"
+                  name="experience_level"
+                  value={l.value}
+                  checked={level === l.value}
+                  disabled={saving}
+                  onChange={() => setLevel(l.value)}
+                  className="signup__radio"
+                />
                 {l.label}
               </label>
             ))}
@@ -92,23 +107,18 @@ export default function ProfileStep({ userId, saving, onSaving, onDone }: Props)
           {errors.level && <FieldError id="level-error" text={errors.level} />}
         </fieldset>
 
-        {errors.form && <FieldError id="profile-error" text={errors.form} />}
-
-        <div className="flex flex-wrap gap-3">
-          <button
-            type="submit"
-            disabled={saving}
-            aria-busy={saving}
-            className="inline-flex min-h-11 items-center justify-center rounded-md bg-brand px-6 font-bold text-on-brand hover:bg-brand-hover active:bg-brand-pressed disabled:cursor-not-allowed disabled:bg-brand-disabled disabled:text-ink-disabled"
-          >
-            {saving ? 'Saving…' : 'Save'}
+        <div className="signup__actions">
+          <button type="submit" disabled={saving} aria-busy={saving} className="signup__button">
+            {saving ? (
+              <>
+                <SpinnerIcon className="signup__spinner" />
+                Saving…
+              </>
+            ) : (
+              'Save'
+            )}
           </button>
-          <button
-            type="button"
-            onClick={skip}
-            disabled={saving}
-            className="inline-flex min-h-11 items-center justify-center rounded-md border border-line-control px-6 font-bold hover:bg-surface-3 active:bg-surface-2 disabled:cursor-not-allowed disabled:text-ink-disabled"
-          >
+          <button type="button" onClick={skip} disabled={saving} className="signup__button signup__button--secondary">
             Skip for now
           </button>
         </div>
@@ -120,12 +130,19 @@ export default function ProfileStep({ userId, saving, onSaving, onDone }: Props)
 // Text plus a labelled icon: an error is never colour alone.
 export function FieldError({ id, text }: { id: string; text: string }) {
   return (
-    <p id={id} className="mt-2 flex items-start gap-2 text-ink-error">
-      <svg role="img" aria-label="Error" width="20" height="20" viewBox="0 0 20 20" className="mt-0.5 shrink-0">
-        <circle cx="10" cy="10" r="9" fill="none" stroke="currentColor" strokeWidth="2" />
-        <path d="M10 5.5v5.5M10 13.5v1.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-      </svg>
-      <span>{text}</span>
+    <p id={id} className="signup__field-error">
+      <WarningIcon className="signup__field-error-icon" label="Error" />
+      {text}
     </p>
+  );
+}
+
+/** A form-level error (not tied to one field). */
+export function FormAlert({ text }: { text: string }) {
+  return (
+    <div className="signup__alert">
+      <WarningIcon className="signup__alert-icon" label="Error" />
+      <p className="signup__alert-text">{text}</p>
+    </div>
   );
 }

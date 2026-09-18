@@ -1,4 +1,6 @@
 ---
+import CaretDown from "@phosphor-icons/core/regular/caret-down.svg";
+
 const items = [
   { q: "Do I need a credit card?", a: "No. The free plan doesn't ask for card details." },
   {
@@ -12,16 +14,23 @@ const items = [
 ];
 ---
 
-<section aria-labelledby="faq-title" class="mx-auto max-w-3xl px-4 py-12">
-  <h2 id="faq-title">Questions before you start</h2>
-  <div class="mt-6 grid gap-3">
-    {
-      items.map((i) => (
-        <details class="rounded-md border border-line px-4 py-3">
-          <summary class="min-h-11 cursor-pointer py-2 font-bold">{i.q}</summary>
-          <p class="pb-2">{i.a}</p>
-        </details>
-      ))
-    }
+<section aria-labelledby="faq-title" class="mx-auto max-w-(--width-page) px-(--space-gutter) py-(--space-section)">
+  <div class="mx-auto flex max-w-(--width-prose) flex-col gap-8">
+    <h2 id="faq-title">Questions before you start</h2>
+    <div class="faq">
+      {
+        items.map((item) => (
+          <details class="faq__item">
+            <summary class="faq__summary">
+              {item.q}
+              <CaretDown class="faq__icon" aria-hidden="true" />
+            </summary>
+            <div class="faq__answer-wrap">
+              <p class="faq__answer">{item.a}</p>
+            </div>
+          </details>
+        ))
+      }
+    </div>
   </div>
 </section>

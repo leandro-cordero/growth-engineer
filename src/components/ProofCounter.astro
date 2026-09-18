@@ -1,11 +1,15 @@
 ---
 // Counter variant only: imported by the counter landing route alone, so control HTML has neither
 // this markup nor its script. The figure is simulated (see lib/proof-counter.ts).
+import Users from "@phosphor-icons/core/regular/users.svg";
 import { formatCount, PROOF_BASE } from "../lib/proof-counter";
 ---
 
-<p data-exp="funnel_proof_v1" data-variant="counter" class="mt-3 text-sm text-ink-muted">
-  <span data-proof-count>{formatCount(PROOF_BASE)}</span> traders have created a free account
+<p data-exp="funnel_proof_v1" data-variant="counter" class="proof-counter">
+  <Users class="proof-counter__icon" aria-hidden="true" />
+  <span>
+    <span class="proof-counter__num" data-proof-count>{formatCount(PROOF_BASE)}</span> traders have created a free account
+  </span>
 </p>
 
 <script>
