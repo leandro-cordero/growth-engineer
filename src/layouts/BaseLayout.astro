@@ -1,0 +1,42 @@
+---
+import { Font } from "astro:assets";
+import "../styles/global.css";
+import "../styles/components.scss";
+
+interface Props {
+  title: string;
+  description: string;
+}
+
+const { title, description } = Astro.props;
+const canonical = Astro.site
+  ? new URL(Astro.url.pathname, Astro.site).href
+  : undefined;
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    {canonical && <link rel="canonical" href={canonical} />}
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <link rel="icon" type="image/svg+xml" href="/logos/isotypeWhite.svg" />
+    <Font
+      cssVariable="--font-lato"
+      preload={[{ weight: "900", style: "normal", subset: "latin" }]}
+    />
+    <Font cssVariable="--font-nunito-sans" />
+  </head>
+  <body class="bg-surface text-ink font-sans">
+    <div class="page-backdrop" aria-hidden="true"></div>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <slot />
+  </body>
+</html>

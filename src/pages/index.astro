@@ -1,15 +1,11 @@
 ---
-import '../styles/global.css';
-import Hello from '../components/Hello';
+import "../styles/global.css";
+import BaseLayout from "../layouts/BaseLayout.astro";
 ---
 
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>growth-fx</title>
-  </head>
-  <body class="grid min-h-screen place-items-center">
-    <Hello name="growth-fx" />
-  </body>
-</html>
+<BaseLayout
+  title="Try FX Replay Free: backtest on past markets"
+  description="Replay past markets candle by candle, place simulated trades and review your decisions. Free forever. No credit card."
+>
+  <main id="main" tabindex="-1">Hola, growth-fx</main>
+</BaseLayout>
